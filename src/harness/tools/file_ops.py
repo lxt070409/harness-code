@@ -39,8 +39,12 @@ def file_delete(path: str) -> ToolResult:
         return ToolResult(ok=False, output="", error=str(e))
 
 
-def file_search(pattern: str, target: str = "content", path: str = ".") -> ToolResult:
+def file_search(pattern: str = "", target: str = "content", path: str = ".", name: str = "", **kwargs) -> ToolResult:
     """Search files by content or name pattern."""
+    # Support both 'pattern' and 'name' (LLM sometimes uses 'name')
+    actual_pattern = pattern or name
+    if not actual_pattern:
+        return ToolResult(ok=False, output="", error="No search pattern provided")
     try:
         root = Path(path)
         results = []
@@ -50,12 +54,12 @@ def file_search(pattern: str, target: str = "content", path: str = ".") -> ToolR
                 if p.is_file():
                     try:
                         content = p.read_text(encoding="utf-8", errors="ignore")
-                        if pattern in content:
+                        if actual_pattern in content:
                             results.append(str(p))
                     except Exception:
                         pass
         else:
-            for p in root.rglob(pattern):
+            for p in root.rglob(actual_pattern):
                 if p.is_file() or p.is_dir():
                     results.append(str(p))
 

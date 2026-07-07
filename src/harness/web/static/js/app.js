@@ -57,7 +57,7 @@ async function sendMessage() {
 
   // Append uploaded file references to the message
   if (uploadedFiles.length > 0) {
-    const fileRefs = uploadedFiles.map(f => `[附件: ${f.filename}]`).join(' ');
+    const fileRefs = uploadedFiles.map(f => `[附件: ${f.path}]`).join(' ');
     text = text ? `${text} ${fileRefs}` : `请查看这些附件: ${fileRefs}`;
     uploadedFiles = [];
     document.getElementById('fileStatus')?.remove();
