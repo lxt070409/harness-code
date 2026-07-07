@@ -50,10 +50,16 @@ class Agent:
             response = self.llm.chat(context)
             action = ActionParser.parse(response)
 
-            # 3. Check for done signal
+            # 3. Check for done / respond / error signals
             if action.name == "done":
                 final_output.append(f"[Cycle {cycle}] Task complete: {action.rationale}")
                 break
+
+            if action.name == "respond":
+                # Pure conversation — no guardrail, no tool
+                final_output.append(action.rationale)
+                self.history.append(("assistant", action.rationale))
+                break  # Single response, wait for next user input
 
             if action.name == "error":
                 final_output.append(f"[Cycle {cycle}] Error: {action.rationale}")

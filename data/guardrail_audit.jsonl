@@ -6,3 +6,11 @@
 {"timestamp": "2026-07-07T15:16:26.267614", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
 {"timestamp": "2026-07-07T15:16:31.156691", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
 {"timestamp": "2026-07-07T15:19:27.700504", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:19:52.133117", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:23:07.351415", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:23:33.760761", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:27:14.684136", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:27:43.587736", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:27:55.540171", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:28:02.711627", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T16:22:38.318895", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}

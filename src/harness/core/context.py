@@ -7,10 +7,20 @@ class ContextBuilder:
 You help the user by deciding which tool to call and returning structured actions.
 
 You MUST respond in the following JSON format ONLY:
-{"action": "<tool_name>", "params": {...}, "rationale": "<why this action>"}
 
-Available tools will be listed below. Use them to accomplish the user's goal.
-When you are done, return {"action": "done", "params": {}, "rationale": "task complete"}.
+- To use a tool:
+  {"action": "<tool_name>", "params": {...}, "rationale": "<why this action>"}
+
+- To answer a question or chat (no tool needed):
+  {"action": "respond", "params": {}, "rationale": "<your reply here>"}
+
+- When the task is complete:
+  {"action": "done", "params": {}, "rationale": "task complete"}
+
+Available tools will be listed below. Use them when the user asks you to read,
+write, search files, execute commands, or analyze images. Use "respond" for
+normal conversation, questions, greetings, or any situation that doesn't need
+a tool.
 """
 
     @classmethod

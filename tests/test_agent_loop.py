@@ -47,3 +47,13 @@ def test_agent_loop_max_cycles():
     agent = make_test_agent([{"action": "file_read", "params": {"path": __file__}, "rationale": "keep going"}] * 60)
     result = agent.run("loop forever")
     assert "max" in result.lower() or "cycle" in result.lower() or "limit" in result.lower() or len(result) > 0
+
+
+def test_agent_responds_to_chat():
+    """Agent can respond conversationally without using a tool."""
+    agent = make_test_agent([
+        {"action": "respond", "params": {}, "rationale": "Hello! How can I help you today?"},
+    ])
+    result = agent.run("hi there")
+    assert "Hello" in result or "hello" in result.lower()
+
