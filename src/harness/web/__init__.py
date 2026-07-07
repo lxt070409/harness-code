@@ -151,9 +151,16 @@ async def key_status():
 @app.post("/api/key")
 async def key_set(req: KeySetRequest):
     ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
-    ENV_FILE.write_text(f'DEEPSEEK_API_KEY="{req.key}"\n', encoding="utf-8")
+    # Support both DeepSeek and DashScope keys
+    key = req.key
+    ENV_FILE.write_text(
+        f'DEEPSEEK_API_KEY="{key}"\n'
+        f'DASHSCOPE_API_KEY="{key}"\n',
+        encoding="utf-8",
+    )
     # Reload env
-    os.environ["DEEPSEEK_API_KEY"] = req.key
+    os.environ["DEEPSEEK_API_KEY"] = key
+    os.environ["DASHSCOPE_API_KEY"] = key
     global _agent
     _agent = None  # force re-create with new key
     return {"status": "ok"}

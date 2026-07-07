@@ -20,3 +20,5 @@
 {"timestamp": "2026-07-07T17:01:10.509824", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
 {"timestamp": "2026-07-07T17:02:29.403499", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
 {"timestamp": "2026-07-07T17:10:12.376408", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T17:10:36.594719", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T17:16:00.940167", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}

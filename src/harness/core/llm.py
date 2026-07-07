@@ -13,9 +13,23 @@ class LLMRouter:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        # Load from standard locations: cwd .env, then ~/.harness/.env
         load_dotenv()
-        self.api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+        load_dotenv(os.path.expanduser("~/.harness/.env"))
+        # Try DeepSeek key first, then OpenAI compatible, then DashScope
+        self.api_key = (
+            os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+            or os.getenv("DASHSCOPE_API_KEY")
+        )
+        base_url = os.getenv("DEEPSEEK_BASE_URL", "")
+        if not base_url:
+            # Auto-detect: if using DashScope key, use their compatible endpoint
+            if os.getenv("DASHSCOPE_API_KEY") and not os.getenv("DEEPSEEK_API_KEY"):
+                base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                self.model = "qwen-turbo-latest"  # DashScope default chat model
+            else:
+                base_url = "https://api.deepseek.com/v1"
         self.base_url = base_url.rstrip("/")
 
     def chat(self, prompt: str) -> dict:
