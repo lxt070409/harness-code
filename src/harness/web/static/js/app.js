@@ -25,6 +25,7 @@ document.getElementById('chatInput').addEventListener('keydown', (e) => {
 
 // ─── Suggestions ───
 let pendingSuggest = '';
+let uploadedFiles = [];  // track uploaded files for the next message
 function suggest(text) {
   document.getElementById('chatInput').value = text;
   autoResize(document.getElementById('chatInput'));
@@ -52,7 +53,15 @@ function newConversation() {
 // ─── Send Message ───
 async function sendMessage() {
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
+  let text = input.value.trim();
+
+  // Append uploaded file references to the message
+  if (uploadedFiles.length > 0) {
+    const fileRefs = uploadedFiles.map(f => `[附件: ${f.filename}]`).join(' ');
+    text = text ? `${text} ${fileRefs}` : `请查看这些附件: ${fileRefs}`;
+    uploadedFiles = [];
+    document.getElementById('fileStatus')?.remove();
+  }
   if (!text) return;
 
   const container = document.getElementById('messageContainer');
@@ -98,6 +107,45 @@ async function sendMessage() {
 
   container.scrollTop = container.scrollHeight;
 }
+
+// ─── File Upload ───
+async function uploadFile(input) {
+  const files = input.files;
+  if (!files.length) return;
+
+  const statusEl = document.createElement('div');
+  statusEl.id = 'fileStatus';
+  statusEl.style.cssText = 'padding:4px 24px;font-size:12px;color:var(--text-muted);';
+
+  for (const file of files) {
+    statusEl.textContent = `📤 上传中: ${file.name}...`;
+    document.querySelector('.chat-input-area').insertBefore(statusEl, document.querySelector('.input-wrapper'));
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        uploadedFiles.push({ filename: data.filename, path: data.path });
+        statusEl.textContent = `📎 ${data.filename} (${(data.size/1024).toFixed(1)}KB) 已添加`;
+        statusEl.style.color = 'var(--status-online)';
+      } else {
+        statusEl.textContent = `❌ ${file.name} 上传失败`;
+        statusEl.style.color = 'var(--status-error)';
+      }
+    } catch (e) {
+      statusEl.textContent = `❌ 上传错误: ${e.message}`;
+      statusEl.style.color = 'var(--status-error)';
+    }
+  }
+
+  input.value = '';
+  setTimeout(() => statusEl.remove(), 3000);
+}
+
+// ─── Dashboard ───
 
 function addMessage(container, role, avatar, content, time) {
   const msg = document.createElement('div');

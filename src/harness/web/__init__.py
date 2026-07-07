@@ -7,7 +7,7 @@ from datetime import datetime
 import asyncio
 import concurrent.futures
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -42,6 +42,12 @@ class KeySetRequest(BaseModel):
 
 class WorkdirRequest(BaseModel):
     path: str
+
+class UploadResponse(BaseModel):
+    status: str
+    filename: str
+    path: str
+    size: int
 
 class StatusResponse(BaseModel):
     model: str
@@ -210,6 +216,26 @@ async def set_workdir(req: WorkdirRequest):
         return {"status": "error", "message": "路径不是目录"}
     _workdir = str(p.resolve())
     return {"status": "ok", "workdir": _workdir}
+
+
+# ─── Upload ───
+
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    safe_name = file.filename.replace(" ", "_").replace("..", "_")
+    dest = UPLOAD_DIR / safe_name
+    content = await file.read()
+    dest.write_bytes(content)
+    return UploadResponse(
+        status="ok",
+        filename=safe_name,
+        path=str(dest.resolve()),
+        size=len(content),
+    )
 
 
 # ─── Serve Static Files ───

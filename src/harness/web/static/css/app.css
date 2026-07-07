@@ -115,7 +115,7 @@ html, body { height: 100%; font-family: var(--font-sans); background: var(--bg-b
 .message.assistant .msg-avatar { background: var(--accent); color: white; }
 .message.user .msg-avatar { background: var(--bg-panel); color: var(--text-secondary); border: 1px solid var(--border-color); }
 .msg-bubble {
-  max-width: 72%; padding: 10px 14px; border-radius: var(--radius-md);
+  max-width: 92%; padding: 10px 14px; border-radius: var(--radius-md);
   font-size: 14px; line-height: 1.6;
 }
 .message.assistant .msg-bubble {

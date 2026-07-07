@@ -66,6 +66,10 @@
         <div class="input-wrapper">
           <textarea rows="1" placeholder="输入消息…" id="chatInput" oninput="autoResize(this)"></textarea>
           <div class="input-actions">
+            <button class="input-btn" onclick="document.getElementById('fileInput').click()" title="上传附件">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v7a2 2 0 004 0V4.5a3.5 3.5 0 00-7 0V11a5 5 0 0010 0V3"/></svg>
+            </button>
+            <input type="file" id="fileInput" style="display:none" onchange="uploadFile(this)" multiple />
             <button class="input-btn send" id="sendBtn" onclick="sendMessage()" title="发送">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l11-5.5-5.5 11L6 10z"/></svg>
             </button>
