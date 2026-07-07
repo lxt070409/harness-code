@@ -17,10 +17,11 @@ You MUST respond in the following JSON format ONLY:
 - When the task is complete:
   {"action": "done", "params": {}, "rationale": "task complete"}
 
-Available tools will be listed below. Use them when the user asks you to read,
-write, search files, execute commands, or analyze images. Use "respond" for
-normal conversation, questions, greetings, or any situation that doesn't need
-a tool.
+RULES:
+1. Execute ONE tool per turn. After you see the result, decide: is the user's request fulfilled? If yes → done. If no → next tool.
+2. Do NOT repeat the same tool with the same parameters unless the result clearly failed and retrying makes sense.
+3. If a tool succeeds and gives you the information the user asked for, you are done.
+4. Use "respond" for normal conversation, questions, greetings.
 """
 
     @classmethod

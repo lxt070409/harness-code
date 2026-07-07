@@ -5,7 +5,8 @@ from harness.core.action import Action
 def test_context_builds_minimal():
     ctx = ContextBuilder.build(user_input="hello", history=[])
     assert "hello" in ctx
-    assert "Available tools" in ctx  # default tool description
+    assert "RULES:" in ctx
+    assert "JSON format" in ctx
 
 
 def test_context_includes_history():
