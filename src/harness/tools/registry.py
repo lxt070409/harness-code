@@ -11,6 +11,12 @@ class ToolRegistry:
     def register(self, tool: Tool):
         self._tools[tool.name] = tool
 
+    def register_tool(self, name: str, description: str, func, danger_level: str = "safe"):
+        """Convenience method to register a tool directly without creating a Tool instance."""
+        from harness.tools import Tool
+
+        self._tools[name] = Tool(name=name, description=description, func=func, danger_level=danger_level)
+
     def dispatch(self, action: Action) -> ToolResult:
         if action.name not in self._tools:
             return ToolResult(ok=False, output="", error=f"Tool '{action.name}' not found", signal="error")

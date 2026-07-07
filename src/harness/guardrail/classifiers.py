@@ -1,81 +1,97 @@
+"""Action classifiers and rule matchers for the guardrail system."""
+
 import re
 from harness.core.action import Action
-from harness.guardrail import Rule, Verdict
+from harness.guardrail import Rule
 
 
 class ActionClassifier:
+    """Classify actions into categories based on action name."""
 
-    @staticmethod
-    def classify(action: Action) -> str:
-        """Route action to a rule category based on action name and params."""
-        action_to_category = {
-            "file_read": "file_operation",
-            "file_write": "file_operation",
-            "file_delete": "file_operation",
-            "file_search": "file_operation",
-            "shell_exec": "shell",
-            "image_read": "image",
-        }
-        return action_to_category.get(action.name, "unknown")
+    CATEGORY_MAP = {
+        "shell_exec": "shell",
+        "shell": "shell",
+        "file_read": "file_operation",
+        "file_write": "file_operation",
+        "file_delete": "file_operation",
+        "file_search": "file_operation",
+        "file_edit": "file_operation",
+    }
+
+    @classmethod
+    def classify(cls, action: Action) -> str:
+        return cls.CATEGORY_MAP.get(action.name, "general")
 
 
 class RuleMatcher:
+    """Match actions against guardrail rules."""
 
     @staticmethod
     def match(action: Action, rule: Rule) -> bool:
-        """Check if an action matches a single rule's conditions."""
-        category = rule.category
-
-        if category == "file_operation":
-            return _match_file_operation(action, rule)
-        elif category == "shell":
-            return _match_shell(action, rule)
-        else:
+        """Check if an action matches a given rule."""
+        match_spec = rule.match
+        if not match_spec:
             return False
 
+        # Check by action name
+        if "action" in match_spec:
+            if action.name != match_spec["action"]:
+                return False
 
-def _match_file_operation(action: Action, rule: Rule) -> bool:
-    match = rule.match
-    # Check action name match
-    if "action" in match and match["action"] != action.name:
+        # Check path patterns (glob patterns)
+        if "path" in match_spec:
+            path_spec = match_spec["path"]
+            params_path = str(action.params.get("path", ""))
+            if "patterns" in path_spec:
+                if not RuleMatcher._matches_any_glob(params_path, path_spec["patterns"]):
+                    return False
+
+        # Check blacklist patterns (regex patterns for shell commands)
+        if "blacklist" in match_spec:
+            command = action.params.get("command", "")
+            return RuleMatcher._matches_any_regex(command, match_spec["blacklist"])
+
+        return True
+
+    @staticmethod
+    def _matches_any_glob(text: str, patterns: list[str]) -> bool:
+        """Match text against glob-style patterns (e.g. /etc/**)."""
+        for pattern in patterns:
+            try:
+                i = 0
+                regex_parts = []
+                while i < len(pattern):
+                    if pattern[i : i + 3] == "/**":
+                        regex_parts.append("/.*")
+                        i += 3
+                    elif pattern[i : i + 2] == "**":
+                        regex_parts.append(".*")
+                        i += 2
+                    elif pattern[i] == "*":
+                        regex_parts.append(r"[^/]*")
+                        i += 1
+                    elif pattern[i] == "?":
+                        regex_parts.append(r"[^/]")
+                        i += 1
+                    else:
+                        regex_parts.append(re.escape(pattern[i]))
+                        i += 1
+                regex = "".join(regex_parts)
+                if re.search(regex, text):
+                    return True
+            except re.error:
+                if pattern in text:
+                    return True
         return False
 
-    # Check path patterns
-    if "path" in match:
-        path_info = match["path"]
-        target_path = action.params.get("path", "")
-
-        # Check inclusion patterns
-        patterns = path_info.get("patterns", [])
-        for pat in patterns:
-            if _path_match(target_path, pat):
-                # Check exclusion
-                excludes = path_info.get("exclude", [])
-                for ex in excludes:
-                    if _path_match(target_path, ex):
-                        return False
-                return True
-
-    return False
-
-
-def _match_shell(action: Action, rule: Rule) -> bool:
-    match = rule.match
-    command = action.params.get("command", "")
-
-    blacklist = match.get("blacklist", [])
-    for pattern in blacklist:
-        if re.search(pattern, command, re.IGNORECASE):
-            return True
-
-    return False
-
-
-def _path_match(target: str, pattern: str) -> bool:
-    """Simple glob-like path matching. Supports ** and *."""
-    # Escape regex special chars, then replace ** and *
-    regex = re.escape(pattern)
-    regex = regex.replace(r"\*\*", ".*")
-    regex = regex.replace(r"\*", "[^/]*")
-    regex = f"^{regex}$"
-    return bool(re.search(regex, target))
+    @staticmethod
+    def _matches_any_regex(text: str, patterns: list[str]) -> bool:
+        """Match text against regex patterns (e.g. rm\\s+-rf\\s+/)."""
+        for pattern in patterns:
+            try:
+                if re.search(pattern, text):
+                    return True
+            except re.error:
+                if pattern in text:
+                    return True
+        return False

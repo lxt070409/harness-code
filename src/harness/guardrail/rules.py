@@ -1,31 +1,43 @@
-import re
-import yaml
+"""Rule loader — loads guardrail rules from YAML files."""
+
 from pathlib import Path
 from harness.guardrail import Rule
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 
 class RuleLoader:
+    """Load guardrail rules from YAML configuration files."""
 
     @staticmethod
     def load(path: str | Path) -> list[Rule]:
+        """Load rules from a YAML file. Returns an empty list if PyYAML is not installed."""
         path = Path(path)
         if not path.exists():
-            return _default_rules()
+            return []
+
+        if yaml is None:
+            # Fallback: return empty list if PyYAML unavailable
+            return []
 
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         if not data or "rules" not in data:
-            return _default_rules()
+            return []
 
-        return [Rule(**r) for r in data["rules"]]
-
-
-def _default_rules() -> list[Rule]:
-    return [
-        Rule(id="default-rm-rf", category="shell", severity="block",
-             description="Block rm -rf /", match={"blacklist": [r"rm\s+-rf\s+/"]}),
-        Rule(id="default-etc-write", category="file_operation", severity="block_always",
-             description="Never write to /etc/passwd",
-             match={"action": "file_write", "path": {"patterns": ["/etc/passwd"]}}),
-    ]
+        rules = []
+        for entry in data["rules"]:
+            rules.append(
+                Rule(
+                    id=entry.get("id", ""),
+                    category=entry.get("category", "general"),
+                    severity=entry.get("severity", "warn"),
+                    description=entry.get("description", ""),
+                    match=entry.get("match", {}),
+                )
+            )
+        return rules

@@ -1,10 +1,13 @@
-import os
+"""Application settings and constants."""
+
 from pathlib import Path
 
-HARNESS_DIR = Path.home() / ".harness"
-HARNESS_DIR.mkdir(parents=True, exist_ok=True)
+# Paths
+DATA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-ENV_FILE = HARNESS_DIR / ".env"
-MEMORY_FILE = HARNESS_DIR / "memory.json"
-GUARDRAIL_LOG = HARNESS_DIR / "guardrail.log"
-RUN_LOG = HARNESS_DIR / "harness.log"
+# Guardrail audit log
+GUARDRAIL_LOG = str(DATA_DIR / "guardrail_audit.jsonl")
+
+# Memory storage
+MEMORY_FILE = DATA_DIR / "memory.json"

@@ -1,0 +1,4 @@
+{"timestamp": "2026-07-07T15:14:55.585089", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:14:58.656063", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:15:49.592530", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
+{"timestamp": "2026-07-07T15:15:56.423140", "action_name": "shell_exec", "params": {"command": "rm -rf /"}, "rationale": "clean everything", "verdict": "block", "user_decision": "denied"}
