@@ -84,7 +84,6 @@ def get_agent() -> Agent:
 
 @app.get("/api/status")
 async def status():
-    agent = get_agent()
     rules_path = Path(__file__).parent.parent / "guardrail" / "default_rules.yaml"
     rules = RuleLoader.load(rules_path) if rules_path.exists() else []
     tools = ["file_read", "file_write", "file_delete", "file_search", "shell_exec", "image_read"]
@@ -92,7 +91,7 @@ async def status():
         model="deepseek-chat",
         provider="DeepSeek",
         connected=ENV_FILE.exists(),
-        sessions=1,
+        sessions=1 if _agent is not None else 0,
         guardrail_rules=len(rules),
         tools_available=tools,
     )
@@ -100,6 +99,11 @@ async def status():
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
+    if not ENV_FILE.exists():
+        return ChatResponse(
+            reply="❌ 未配置 API Key。请在仪表盘页面设置 DeepSeek API Key，或运行 `harness key set`。",
+            timestamp=datetime.now().isoformat(),
+        )
     agent = get_agent()
     try:
         result = agent.run(req.message)

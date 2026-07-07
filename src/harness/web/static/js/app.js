@@ -87,16 +87,10 @@ async function sendMessage() {
     });
     document.getElementById(typingId)?.remove();
 
-    if (!res.ok) {
-      const err = await res.text();
-      addMessage(container, 'assistant', 'H',
-        '❌ 请求失败: ' + (err.length > 200 ? err.slice(0,200) + '…' : err), time);
-    } else {
-      const data = await res.json();
-      const reply = data.reply || '(无回复)';
-      addMessage(container, 'assistant', 'H', formatReply(reply), time);
-      updateStatusBar(data);
-    }
+    const data = await res.json();
+    const reply = data.reply || '(无回复)';
+    addMessage(container, 'assistant', 'H', formatReply(reply), time);
+    updateStatusBar(data);
   } catch (err) {
     document.getElementById(typingId)?.remove();
     addMessage(container, 'assistant', 'H', '❌ 网络错误: ' + err.message, time);
