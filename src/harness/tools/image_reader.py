@@ -46,7 +46,13 @@ def image_read(path: str, question: str = "Describe this image in detail") -> To
 
         if response.status_code == 200:
             data = response.json()
-            text = data.get("output", {}).get("text", "No description returned")
+            # Qwen-VL returns text in output.choices[0].message.content[0].text
+            choices = data.get("output", {}).get("choices", [])
+            if choices:
+                content = choices[0].get("message", {}).get("content", [])
+                text = content[0].get("text", "No description returned") if content else "No description returned"
+            else:
+                text = data.get("output", {}).get("text", "No description returned")
             return ToolResult(ok=True, output=text)
         else:
             return ToolResult(ok=False, output="",
