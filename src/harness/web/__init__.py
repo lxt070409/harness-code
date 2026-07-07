@@ -33,6 +33,7 @@ app = FastAPI(title="Harness Agent")
 
 class ChatRequest(BaseModel):
     message: str
+    conv_id: str = ""
 
 class ChatResponse(BaseModel):
     reply: str
@@ -158,6 +159,13 @@ async def chat_stream(req: ChatRequest, request: Request):
 
     async def event_stream():
         agent = get_agent()
+        # Load conversation history for context
+        if req.conv_id:
+            conv = _store.get(req.conv_id)
+            if conv:
+                for msg in conv["messages"]:
+                    role = "assistant" if msg["role"] == "assistant" else "user"
+                    agent.history.append((role, msg["content"]))
         old_cwd = os.getcwd()
         os.chdir(_workdir)
         import shutil

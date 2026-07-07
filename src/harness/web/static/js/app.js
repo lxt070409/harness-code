@@ -150,7 +150,7 @@ async function sendMessage() {
     fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text, conv_id: currentConvId || '' }),
     }).then(async (res) => {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
