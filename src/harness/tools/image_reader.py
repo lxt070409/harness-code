@@ -41,7 +41,7 @@ def image_read(path: str, question: str = "Describe this image in detail") -> To
                     ]
                 },
             },
-            timeout=30,
+            timeout=120,
         )
 
         if response.status_code == 200:
