@@ -40,6 +40,9 @@ class ChatResponse(BaseModel):
 class KeySetRequest(BaseModel):
     key: str
 
+class WorkdirRequest(BaseModel):
+    path: str
+
 class StatusResponse(BaseModel):
     model: str
     provider: str
@@ -60,6 +63,7 @@ class GuardrailEntry(BaseModel):
 
 _agent: Agent | None = None
 _executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+_workdir: str = str(Path.cwd())
 
 
 def get_agent() -> Agent:
@@ -109,10 +113,14 @@ async def chat(req: ChatRequest):
         )
     agent = get_agent()
     try:
+        # Switch to configured workdir before running
+        old_cwd = os.getcwd()
+        os.chdir(_workdir)
         result = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(_executor, agent.run, req.message),
             timeout=120,
         )
+        os.chdir(old_cwd)
         return ChatResponse(reply=result, timestamp=datetime.now().isoformat())
     except asyncio.TimeoutError:
         return ChatResponse(
@@ -183,7 +191,25 @@ async def config():
         "max_cycles": 50,
         "rules_count": len(rules),
         "model": "deepseek-chat",
+        "workdir": _workdir,
     }
+
+
+@app.get("/api/config/workdir")
+async def get_workdir():
+    return {"workdir": _workdir}
+
+
+@app.post("/api/config/workdir")
+async def set_workdir(req: WorkdirRequest):
+    global _workdir
+    p = Path(req.path)
+    if not p.exists():
+        return {"status": "error", "message": "目录不存在"}
+    if not p.is_dir():
+        return {"status": "error", "message": "路径不是目录"}
+    _workdir = str(p.resolve())
+    return {"status": "ok", "workdir": _workdir}
 
 
 # ─── Serve Static Files ───

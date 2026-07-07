@@ -115,6 +115,18 @@
             </div>
           </div>
 
+          <!-- Working Directory -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">工作目录</span></div>
+            <div class="card-body">
+              <div class="stat-row"><span class="label">当前目录</span><span class="value" id="curWorkdir" style="font-size:11px">—</span></div>
+              <div class="key-input-row">
+                <input type="text" class="key-input" id="workdirInput" placeholder="例如: C:\\Users\\24569\\project" />
+                <button class="btn btn-primary" onclick="setWorkdir()">切换</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Guardrail Log -->
           <div class="card dash-full" id="guardrailCard">
             <div class="card-header"><span class="card-title">护栏拦截记录</span></div>

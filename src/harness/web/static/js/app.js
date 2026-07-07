@@ -173,6 +173,13 @@ async function refreshDashboard() {
     const ks = await r3.json();
     document.getElementById('keyStatus').textContent = ks.configured ? '✅ API Key 已配置' : '❌ 未配置 API Key';
   } catch (e) {}
+
+  // Workdir
+  try {
+    const r4 = await fetch('/api/config/workdir');
+    const wd = await r4.json();
+    document.getElementById('curWorkdir').textContent = wd.workdir || '—';
+  } catch (e) {}
 }
 
 // ─── API Key ───
@@ -204,6 +211,27 @@ async function clearApiKey() {
     document.getElementById('keyStatus').textContent = '❌ API Key 已清除';
     refreshDashboard();
   } catch (e) {}
+}
+
+async function setWorkdir() {
+  const path = document.getElementById('workdirInput').value.trim();
+  if (!path) return alert('请输入目录路径');
+  try {
+    const res = await fetch('/api/config/workdir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      document.getElementById('curWorkdir').textContent = data.workdir;
+      document.getElementById('workdirInput').value = '';
+    } else {
+      alert(data.message || '切换失败');
+    }
+  } catch (e) {
+    alert('网络错误');
+  }
 }
 
 function updateStatusBar(data) {
