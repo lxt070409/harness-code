@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">H</div>
+      <span class="sidebar-title">Harness</span>
+    </div>
+
+    <div class="sidebar-section-label">对话</div>
+    <div class="conversation-list" id="conversationList">
+      <div class="conversation-item active">
+        <span class="conv-icon"></span>
+        <div class="conv-info">
+          <div class="conv-title">当前会话</div>
+          <div class="conv-meta">刚刚</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="new-chat-btn" onclick="newConversation()">+ 新对话</button>
+    </div>
+  </aside>
+
+  <!-- ═══ Main ═══ -->
+  <div class="main">
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="chat">对话</button>
+      <button class="tab-btn" data-tab="dashboard">仪表盘</button>
+    </nav>
+
+    <!-- ═══ Chat Tab ═══ -->
+    <div class="tab-content active" id="tab-chat">
+      <div class="chat-messages" id="messageContainer">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Harness Agent 已就绪</h3>
+          <p>输入你的需求，Agent 会使用工具来帮助你</p>
+          <div class="suggestions">
+            <span class="suggestion-chip" onclick="suggest('读取当前目录的文件')">读取当前目录的文件</span>
+            <span class="suggestion-chip" onclick="suggest('运行测试')">运行测试</span>
+            <span class="suggestion-chip" onclick="suggest('帮我看看这张图')">帮我看看这张图</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <textarea rows="1" placeholder="输入消息…" id="chatInput" oninput="autoResize(this)"></textarea>
+          <div class="input-actions">
+            <button class="input-btn send" id="sendBtn" onclick="sendMessage()" title="发送">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l11-5.5-5.5 11L6 10z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Dashboard Tab ═══ -->
+    <div class="tab-content" id="tab-dashboard">
+      <div class="dashboard">
+        <div class="dash-header">
+          <h1>仪表盘</h1>
+          <p>Agent 运行状态与系统概览</p>
+        </div>
+
+        <div class="dash-grid" id="dashboardGrid">
+          <!-- Agent Status -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Agent 状态</span></div>
+            <div class="card-body">
+              <div class="agent-status">
+                <span class="status-dot" id="statusDot"></span>
+                <div class="status-info">
+                  <h2 id="statusModel">—</h2>
+                  <p id="statusProvider">等待连接</p>
+                </div>
+              </div>
+              <div style="margin-top:14px">
+                <div class="stat-row"><span class="label">护栏规则</span><span class="value" id="statRules">—</span></div>
+                <div class="stat-row"><span class="label">可用工具</span><span class="value" id="statTools">—</span></div>
+                <div class="stat-row"><span class="label">API Key</span><span class="value" id="statKey">未配置</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Key -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">API Key 管理</span></div>
+            <div class="card-body">
+              <div class="key-status" id="keyStatus">检查中…</div>
+              <div class="key-input-row">
+                <input type="password" class="key-input" id="keyInput" placeholder="输入 DeepSeek API Key" />
+                <button class="btn btn-primary" onclick="setApiKey()">保存</button>
+              </div>
+              <button class="btn btn-ghost" style="margin-top:8px;width:100%" onclick="clearApiKey()">清除 Key</button>
+            </div>
+          </div>
+
+          <!-- Guardrail Log -->
+          <div class="card dash-full" id="guardrailCard">
+            <div class="card-header"><span class="card-title">护栏拦截记录</span></div>
+            <div class="card-body">
+              <div id="guardrailLog">加载中…</div>
+            </div>
+          </div>
+
+          <!-- Tools -->
+          <div class="card dash-full">
+            <div class="card-header"><span class="card-title">已注册工具</span></div>
+            <div class="card-body">
+              <ul class="tool-list" id="toolList">
+                <li><span class="tool-dot success"></span><span class="tool-name">file_read</span><span class="tool-duration">读取文件</span></li>
+                <li><span class="tool-dot success"></span><span class="tool-name">file_write</span><span class="tool-duration">写入文件 ⚠️</span></li>
+                <li><span class="tool-dot success"></span><span class="tool-name">file_delete</span><span class="tool-duration">删除文件 ⛔</span></li>
+                <li><span class="tool-dot success"></span><span class="tool-name">file_search</span><span class="tool-duration">搜索文件</span></li>
+                <li><span class="tool-dot success"></span><span class="tool-name">shell_exec</span><span class="tool-duration">执行命令 ⛔</span></li>
+                <li><span class="tool-dot success"></span><span class="tool-name">image_read</span><span class="tool-duration">识图</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Status Bar ═══ -->
+    <div class="status-bar">
+      <span class="dot"></span>
+      <span id="statusModelName">deepseek-chat</span>
+      <span class="sep">|</span>
+      <span id="statusTokens">— tokens</span>
+      <span class="status-right">
+        <span id="statusConnection">● 检查中…</span>
+        <span class="sep">|</span>
+        <span id="statusLatency">—</span>
+      </span>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -30,6 +30,11 @@ def cli():
     init_parser = subparsers.add_parser("init", help="Initialize harness configuration")
     init_parser.add_argument("--force", action="store_true", help="Re-initialize if already configured")
 
+    # harness web
+    web_parser = subparsers.add_parser("web", help="Start web UI")
+    web_parser.add_argument("--port", type=int, default=8080, help="Port to listen on (default: 8080)")
+    web_parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind (default: 127.0.0.1)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -57,6 +62,10 @@ def cli():
 
     elif args.command == "run":
         run_agent(args)
+
+    elif args.command == "web":
+        from harness.web.server import run_server
+        run_server(args)
 
 
 def run_agent(args):
