@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+import asyncio
+import concurrent.futures
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -57,6 +59,7 @@ class GuardrailEntry(BaseModel):
 # ─── Agent Factory ───
 
 _agent: Agent | None = None
+_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
 
 def get_agent() -> Agent:
@@ -106,10 +109,21 @@ async def chat(req: ChatRequest):
         )
     agent = get_agent()
     try:
-        result = agent.run(req.message)
+        result = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(_executor, agent.run, req.message),
+            timeout=120,
+        )
         return ChatResponse(reply=result, timestamp=datetime.now().isoformat())
+    except asyncio.TimeoutError:
+        return ChatResponse(
+            reply="⏱️ 请求超时（120s）。Agent 正在处理的请求可能太复杂，请重试或简化需求。",
+            timestamp=datetime.now().isoformat(),
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return ChatResponse(
+            reply=f"❌ 执行出错: {str(e)[:200]}",
+            timestamp=datetime.now().isoformat(),
+        )
 
 
 @app.get("/api/guardrail-log")

@@ -1,21 +1,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-base: #0f1623;
-  --bg-panel: #141c2b;
-  --bg-sidebar: #111827;
-  --bg-card: #1a2332;
-  --bg-input: #1e293b;
-  --bg-code: #0d1520;
-  --border-color: #1e3a5f;
-  --border-light: #233554;
+  --bg-base: #e8f0fe;
+  --bg-panel: #dee8f8;
+  --bg-sidebar: #d4e0f2;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-code: #1a2332;
+  --border-color: #c5d5e8;
+  --border-light: #dce6f2;
   --accent: #4a8cff;
   --accent-hover: #3a7bd5;
-  --accent-light: rgba(74, 140, 255, 0.1);
-  --accent-soft: rgba(74, 140, 255, 0.05);
-  --text-primary: #e8edf5;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --accent-light: rgba(74, 140, 255, 0.08);
+  --accent-soft: rgba(74, 140, 255, 0.04);
+  --text-primary: #1a2332;
+  --text-secondary: #5a6f8c;
+  --text-muted: #8a9bb5;
   --text-on-accent: #ffffff;
   --status-online: #10b981;
   --status-warn: #f59e0b;
