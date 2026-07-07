@@ -4,5 +4,6 @@ __pycache__/
 .harness/
 dist/
 *.egg-info/
+uploads/
 data/
 .superpowers/
