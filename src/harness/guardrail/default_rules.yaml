@@ -1,0 +1,74 @@
+rules:
+  - id: rm-rf-root
+    category: shell
+    severity: block
+    description: Block rm -rf on root
+    match:
+      blacklist:
+        - "rm\\s+-rf\\s+/"
+        - "rm\\s+-rf\\s+.*--no-preserve-root"
+
+  - id: dangerous-dd
+    category: shell
+    severity: block
+    description: Block dd to block devices
+    match:
+      blacklist:
+        - "dd\\s+if=.*of=/dev/sd"
+        - "dd\\s+if=.*of=/dev/nvme"
+
+  - id: git-force-push
+    category: shell
+    severity: block
+    description: Block git push --force
+    match:
+      blacklist:
+        - "git\\s+push\\s+.*--force"
+        - "git\\s+push\\s+.*-f\\s"
+
+  - id: pip-unknown
+    category: shell
+    severity: block
+    description: Block unknown pip packages
+    match:
+      blacklist:
+        - "pip\\s+install\\s+(?!(requests|numpy|pandas|flask|fastapi|httpx|pytest|pyyaml|python-dotenv|keyring|httpx\\b))"
+
+  - id: delete-system-path
+    category: file_operation
+    severity: block_always
+    description: Never delete critical system paths
+    match:
+      action: file_delete
+      path:
+        patterns:
+          - "/etc/**"
+          - "/sys/**"
+          - "/proc/**"
+          - "/boot/**"
+          - "/dev/**"
+
+  - id: write-system-path
+    category: file_operation
+    severity: block_always
+    description: Never write to /etc/passwd
+    match:
+      action: file_write
+      path:
+        patterns:
+          - "/etc/passwd"
+          - "/etc/shadow"
+
+  - id: delete-home-sensitive
+    category: file_operation
+    severity: warn
+    description: Warn when deleting from home
+    match:
+      action: file_delete
+      path:
+        patterns:
+          - "/home/**"
+          - "~/**"
+        exclude:
+          - "~/temp/**"
+          - "~/tmp/**"
