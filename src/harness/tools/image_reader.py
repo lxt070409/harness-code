@@ -43,6 +43,10 @@ def image_read(path: str, question: str = "") -> ToolResult:
                         }
                     ]
                 },
+                "parameters": {
+                    "max_tokens": 4096,
+                    "result_format": "message",
+                },
             },
             timeout=120,
         )
