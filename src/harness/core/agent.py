@@ -99,11 +99,9 @@ class Agent:
                 "file_delete": "🗑️",
                 "file_search": "🔍",
             }.get(action.name, "🔧")
-            # Show full output for image_read, truncate others
-            max_len = 2000 if action.name == "image_read" else 200
-            result_summary = f"{icon} [{action.name}] {'✅ OK' if result.ok else '❌ FAIL'}: {result.output[:max_len]}"
+            result_summary = f"{icon} [{action.name}] {'✅ OK' if result.ok else '❌ FAIL'}: {result.output}"
             if result.error:
-                result_summary += f" | error: {result.error[:200]}"
+                result_summary += f" | error: {result.error}"
             self.history.append(("assistant", action.describe()))
             self.history.append(("system", result_summary))
             final_output.append(result_summary)
