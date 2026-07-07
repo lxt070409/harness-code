@@ -1,7 +1,7 @@
 from harness.core.result import ToolResult
 
 
-def image_read(path: str, question: str = "Describe this image in detail") -> ToolResult:
+def image_read(path: str, question: str = "") -> ToolResult:
     """
     Read an image and return a text description.
     Uses Qwen-VL API via httpx. Requires QWEN_VL_API_KEY in environment.
@@ -15,6 +15,9 @@ def image_read(path: str, question: str = "Describe this image in detail") -> To
     if not api_key:
         return ToolResult(ok=False, output="",
                           error="Image reading requires QWEN_VL_API_KEY or DASHSCOPE_API_KEY in .env")
+
+    # Default prompt: extract all visible text in detail
+    prompt = question or "请完整提取这张图片中所有可见的文字内容，不要概括，不要遗漏。如果是代码或题目，逐字输出。"
 
     try:
         with open(path, "rb") as f:
@@ -35,7 +38,7 @@ def image_read(path: str, question: str = "Describe this image in detail") -> To
                             "role": "user",
                             "content": [
                                 {"image": f"data:image/jpeg;base64,{image_b64}"},
-                                {"text": question},
+                                {"text": prompt},
                             ],
                         }
                     ]
