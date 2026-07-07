@@ -1,0 +1,10 @@
+harness:
+  llm:
+    provider: deepseek
+    model: deepseek-chat
+    max_tokens: 4096
+    temperature: 0.3
+  memory:
+    max_history_rounds: 20
+  loop:
+    max_cycles: 50

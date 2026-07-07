@@ -1,0 +1,56 @@
+rules:
+  - id: test-rm-rf
+    category: shell
+    severity: block
+    description: "Block rm -rf /"
+    match:
+      blacklist:
+        - "rm\\s+-rf\\s+/"
+        - "dd\\s+if="
+
+  - id: test-delete-etc
+    category: file_operation
+    severity: block
+    description: "Block delete from /etc"
+    match:
+      action: file_delete
+      path:
+        patterns:
+          - "/etc/**"
+
+  - id: test-etc-write-block-always
+    category: file_operation
+    severity: block_always
+    description: "Never write to /etc/passwd"
+    match:
+      action: file_write
+      path:
+        patterns:
+          - "/etc/passwd"
+
+  - id: test-git-force-push
+    category: shell
+    severity: block
+    description: "Block git push --force"
+    match:
+      blacklist:
+        - "git\\s+push\\s+.*--force"
+        - "git\\s+push\\s+.*-f\\s"
+
+  - id: test-pip-unknown
+    category: shell
+    severity: block
+    description: "Block unknown pip packages"
+    match:
+      blacklist:
+        - "pip\\s+install\\s+(?!requests|numpy|pandas|flask|fastapi|httpx)"
+
+  - id: test-temp-delete-allow
+    category: file_operation
+    severity: warn
+    description: "Warn but allow delete from /tmp"
+    match:
+      action: file_delete
+      path:
+        patterns:
+          - "/tmp/**"
