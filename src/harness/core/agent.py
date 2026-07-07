@@ -90,8 +90,16 @@ class Agent:
             # 5. Execute tool
             result = self.tools.dispatch(action)
 
-            # 6. Record in history
-            result_summary = f"[{action.name}] {'OK' if result.ok else 'FAIL'}: {result.output[:200]}"
+            # 6. Record in history with visual icon
+            icon = {
+                "image_read": "🖼️",
+                "shell_exec": "💻",
+                "file_read": "📖",
+                "file_write": "✍️",
+                "file_delete": "🗑️",
+                "file_search": "🔍",
+            }.get(action.name, "🔧")
+            result_summary = f"{icon} [{action.name}] {'✅ OK' if result.ok else '❌ FAIL'}: {result.output[:200]}"
             if result.error:
                 result_summary += f" | error: {result.error[:200]}"
             self.history.append(("assistant", action.describe()))
