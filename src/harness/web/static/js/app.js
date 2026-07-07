@@ -1,6 +1,7 @@
 // ─── Harness Web UI — App Logic ───
 
 let messageCount = 0;
+let currentConvId = null;
 
 // ─── Tab Switching ───
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -33,21 +34,80 @@ function suggest(text) {
 }
 
 // ─── New Conversation ───
-function newConversation() {
-  document.getElementById('messageContainer').innerHTML = `
-    <div class="empty-state" id="emptyState">
-      <div class="empty-state-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+async function newConversation() {
+  try {
+    const res = await fetch('/api/conversations', { method: 'POST' });
+    const conv = await res.json();
+    currentConvId = conv.id;
+    switchConversation(conv.id);
+  } catch (e) {}
+}
+
+async function switchConversation(convId) {
+  currentConvId = convId;
+  const container = document.getElementById('messageContainer');
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">加载中…</div>';
+  try {
+    const res = await fetch('/api/conversations/' + convId);
+    const conv = await res.json();
+    container.innerHTML = '';
+    if (conv.messages.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Harness Agent 已就绪</h3>
+          <p>输入你的需求，Agent 会使用工具来帮助你</p>
+          <div class="suggestions">
+            <span class="suggestion-chip" onclick="suggest('读取当前目录的文件')">读取当前目录的文件</span>
+            <span class="suggestion-chip" onclick="suggest('运行测试')">运行测试</span>
+            <span class="suggestion-chip" onclick="suggest('帮我看看这张图')">帮我看看这张图</span>
+          </div>
+        </div>`;
+    } else {
+      for (const msg of conv.messages) {
+        const role = msg.role === 'user' ? 'user' : 'assistant';
+        const avatar = role === 'user' ? 'U' : 'H';
+        const time = (msg.timestamp || '').slice(11, 16);
+        addMessage(container, role, avatar, escapeHtml(msg.content), time);
+      }
+    }
+    messageCount = conv.messages.length;
+    // Update sidebar
+    refreshSidebar(convId);
+  } catch (e) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--status-error)">加载失败</div>';
+  }
+}
+
+async function saveMessage(role, content) {
+  if (!currentConvId) return;
+  try {
+    await fetch('/api/conversations/' + currentConvId + '/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role, content }),
+    });
+    refreshSidebar(currentConvId);
+  } catch (e) {}
+}
+
+async function refreshSidebar(activeId) {
+  try {
+    const res = await fetch('/api/conversations');
+    const convs = await res.json();
+    const list = document.getElementById('conversationList');
+    list.innerHTML = convs.map(c => `
+      <div class="conversation-item ${c.id === activeId ? 'active' : ''}" onclick="switchConversation('${c.id}')">
+        <span class="conv-icon"></span>
+        <div class="conv-info">
+          <div class="conv-title">${escapeHtml(c.title)}</div>
+          <div class="conv-meta">${c.message_count} 条消息</div>
+        </div>
       </div>
-      <h3>Harness Agent 已就绪</h3>
-      <p>输入你的需求，Agent 会使用工具来帮助你</p>
-      <div class="suggestions">
-        <span class="suggestion-chip" onclick="suggest('读取当前目录的文件')">读取当前目录的文件</span>
-        <span class="suggestion-chip" onclick="suggest('运行测试')">运行测试</span>
-        <span class="suggestion-chip" onclick="suggest('帮我看看这张图')">帮我看看这张图</span>
-      </div>
-    </div>`;
-  messageCount = 0;
+    `).join('');
+  } catch (e) {}
 }
 
 // ─── Send Message ───
@@ -73,6 +133,7 @@ async function sendMessage() {
 
   // User message
   addMessage(container, 'user', 'U', text, time);
+  saveMessage('user', text);
   input.value = '';
   input.style.height = 'auto';
   messageCount++;
@@ -99,6 +160,7 @@ async function sendMessage() {
     const data = await res.json();
     const reply = data.reply || '(无回复)';
     addMessage(container, 'assistant', 'H', formatReply(reply), time);
+    saveMessage('assistant', reply);
     updateStatusBar(data);
   } catch (err) {
     document.getElementById(typingId)?.remove();
@@ -226,7 +288,7 @@ async function refreshDashboard() {
   try {
     const r4 = await fetch('/api/config/workdir');
     const wd = await r4.json();
-    document.getElementById('curWorkdir').textContent = wd.workdir || '—';
+    document.getElementById('workdirDisplay').textContent = wd.workdir || '—';
   } catch (e) {}
 }
 
@@ -261,9 +323,24 @@ async function clearApiKey() {
   } catch (e) {}
 }
 
-async function setWorkdir() {
+function editWorkdir() {
+  const display = document.getElementById('workdirDisplay');
+  const input = document.getElementById('workdirInput');
+  input.value = display.textContent;
+  document.getElementById('workdirDisplay').style.display = 'none';
+  document.getElementById('workdirEdit').style.display = 'block';
+  input.focus();
+  input.select();
+}
+
+function cancelWorkdirEdit() {
+  document.getElementById('workdirDisplay').style.display = 'block';
+  document.getElementById('workdirEdit').style.display = 'none';
+}
+
+async function saveWorkdir() {
   const path = document.getElementById('workdirInput').value.trim();
-  if (!path) return alert('请输入目录路径');
+  if (!path) { cancelWorkdirEdit(); return; }
   try {
     const res = await fetch('/api/config/workdir', {
       method: 'POST',
@@ -272,15 +349,84 @@ async function setWorkdir() {
     });
     const data = await res.json();
     if (data.status === 'ok') {
-      document.getElementById('curWorkdir').textContent = data.workdir;
-      document.getElementById('workdirInput').value = '';
+      document.getElementById('workdirDisplay').textContent = data.workdir;
     } else {
       alert(data.message || '切换失败');
     }
   } catch (e) {
     alert('网络错误');
   }
+  cancelWorkdirEdit();
 }
+
+async function quickWorkdir(path) {
+  try {
+    const res = await fetch('/api/config/workdir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      document.getElementById('workdirDisplay').textContent = data.workdir;
+      document.getElementById('dirBrowser').style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+async function browseDir(path) {
+  const browser = document.getElementById('dirBrowser');
+  const current = path || document.getElementById('workdirDisplay').textContent;
+  browser.style.display = 'block';
+  browser.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:12px">加载中…</div>';
+
+  try {
+    const res = await fetch('/api/config/workdir/list?path=' + encodeURIComponent(current));
+    const data = await res.json();
+    let html = '<div style="padding:4px 6px;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border-light)">' + data.path + '</div>';
+
+    if (data.parent) {
+      const parentPath = data.parent.replace(/\\\\/g, '/');
+      html += '<div style="padding:4px 6px;cursor:pointer;font-size:13px;color:var(--accent)" onclick="browseDir(\'' + parentPath + '\')">📂 ..</div>';
+    }
+    for (const d of data.dirs) {
+      const full = data.path.replace(/\\/g, '/') + '/' + d;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-bottom:1px solid var(--border-light)">' +
+        '<span style="cursor:pointer;font-size:13px" onclick="browseDir(\'' + full + '\')">📁 ' + d + '</span>' +
+        '<button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="quickWorkdir(\'' + full + '\')">选择</button>' +
+        '</div>';
+    }
+    if (data.dirs.length === 0) {
+      html += '<div style="padding:8px 6px;font-size:12px;color:var(--text-muted)">(空目录)</div>';
+    }
+    browser.innerHTML = html;
+  } catch (e) {
+    browser.innerHTML = '<div style="padding:8px;color:var(--status-error);font-size:12px">加载失败</div>';
+  }
+}
+
+function pickFolder(input) {
+  const files = input.files;
+  if (!files.length) return;
+  const formData = new FormData();
+  formData.append('file', files[0]);
+  fetch('/api/upload', { method: 'POST', body: formData }).then(r => r.json()).then(data => {
+    if (data.status === 'ok') {
+      const dir = data.original_dir;
+      if (dir) {
+        quickWorkdir(dir.replace(/\\\\/g, '/'));
+      } else {
+        // Fallback: use upload dir, then open tree browser
+        const uploadDir = data.path.replace(/\\\\/g, '/').replace(/\/[^/]+$/, '');
+        quickWorkdir(uploadDir);
+        browseDir('C:/Users');
+      }
+    }
+  });
+  input.value = '';
+}
+
+// ─── Status Bar Update ───
 
 function updateStatusBar(data) {
   if (data.timestamp) {
@@ -289,5 +435,19 @@ function updateStatusBar(data) {
 }
 
 // ─── Init ───
-refreshDashboard();
-setInterval(refreshDashboard, 30000); // refresh every 30s
+async function initApp() {
+  try {
+    const res = await fetch('/api/conversations');
+    const convs = await res.json();
+    if (convs.length > 0) {
+      await switchConversation(convs[0].id);
+    } else {
+      await newConversation();
+    }
+  } catch (e) {
+    newConversation();
+  }
+  refreshDashboard();
+}
+initApp();
+setInterval(refreshDashboard, 30000);

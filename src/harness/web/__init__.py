@@ -25,6 +25,7 @@ from harness.tools.file_ops import file_read, file_write, file_delete, file_sear
 from harness.tools.shell import shell_exec
 from harness.tools.image_reader import image_read
 from harness.memory.manager import MemoryManager
+from harness.web.conversations import ConversationStore
 
 app = FastAPI(title="Harness Agent")
 
@@ -48,6 +49,7 @@ class UploadResponse(BaseModel):
     filename: str
     path: str
     size: int
+    original_dir: str | None = None
 
 class StatusResponse(BaseModel):
     model: str
@@ -70,6 +72,7 @@ class GuardrailEntry(BaseModel):
 _agent: Agent | None = None
 _executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 _workdir: str = str(Path.cwd())
+_store = ConversationStore()
 
 
 def get_agent() -> Agent:
@@ -213,6 +216,31 @@ async def get_workdir():
     return {"workdir": _workdir}
 
 
+@app.get("/api/config/workdir/list")
+async def list_dirs(path: str = ""):
+    """List subdirectories of a given path for the directory browser."""
+    if path:
+        # If path starts with just a drive letter like "C:", normalize it
+        if path.endswith(":") or (len(path) == 2 and path[1] == ":"):
+            path = path + "/"
+        base = Path(path)
+    else:
+        # Default to C:\ on first open
+        base = Path("C:/")
+    if not base.exists() or not base.is_dir():
+        return {"path": str(base), "dirs": [], "parent": None}
+
+    try:
+        dirs = sorted(
+            [str(p.name) for p in base.iterdir() if p.is_dir() and not p.name.startswith(".")],
+            key=lambda x: x.lower(),
+        )
+        parent = str(base.parent) if base.parent != base else None
+        return {"path": str(base.resolve()), "dirs": dirs, "parent": parent}
+    except PermissionError:
+        return {"path": str(base), "dirs": [], "parent": str(base.parent)}
+
+
 @app.post("/api/config/workdir")
 async def set_workdir(req: WorkdirRequest):
     global _workdir
@@ -223,6 +251,45 @@ async def set_workdir(req: WorkdirRequest):
         return {"status": "error", "message": "路径不是目录"}
     _workdir = str(p.resolve())
     return {"status": "ok", "workdir": _workdir}
+
+
+# ─── Conversations ───
+
+class MessageRequest(BaseModel):
+    role: str
+    content: str
+
+
+@app.get("/api/conversations")
+async def list_conversations():
+    return _store.list()
+
+
+@app.post("/api/conversations")
+async def create_conversation():
+    return _store.create()
+
+
+@app.get("/api/conversations/{conv_id}")
+async def get_conversation(conv_id: str):
+    conv = _store.get(conv_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conv
+
+
+@app.post("/api/conversations/{conv_id}/messages")
+async def add_message(conv_id: str, msg: MessageRequest):
+    result = _store.add_message(conv_id, msg.role, msg.content)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return result
+
+
+@app.delete("/api/conversations/{conv_id}")
+async def delete_conversation(conv_id: str):
+    _store.delete(conv_id)
+    return {"status": "deleted"}
 
 
 # ─── Upload ───
@@ -237,12 +304,37 @@ async def upload_file(file: UploadFile = File(...)):
     dest = UPLOAD_DIR / safe_name
     content = await file.read()
     dest.write_bytes(content)
+    # Try to find where this file actually lives on disk (since browser hides the path)
+    found_path = _locate_file(safe_name)
     return UploadResponse(
         status="ok",
         filename=safe_name,
         path=str(dest.resolve()),
         size=len(content),
+        original_dir=found_path,
     )
+
+
+def _locate_file(filename: str) -> str | None:
+    """Search common user directories for a recently uploaded file."""
+    import stat
+    home = Path.home()
+    search_roots = [
+        home,
+        home / "Downloads",
+        home / "Desktop",
+        home / "Documents",
+        home / "harness-code",
+        Path("C:/Users"),
+    ]
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for f in root.rglob(filename):
+            if f.is_file():
+                # Found it - return the parent directory
+                return str(f.parent.resolve())
+    return None
 
 
 # ─── Serve Static Files ───

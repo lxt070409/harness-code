@@ -25,8 +25,8 @@
       <div class="conversation-item active">
         <span class="conv-icon"></span>
         <div class="conv-info">
-          <div class="conv-title">当前会话</div>
-          <div class="conv-meta">刚刚</div>
+          <div class="conv-title">加载中…</div>
+          <div class="conv-meta">—</div>
         </div>
       </div>
     </div>
@@ -123,11 +123,18 @@
           <div class="card">
             <div class="card-header"><span class="card-title">工作目录</span></div>
             <div class="card-body">
-              <div class="stat-row"><span class="label">当前目录</span><span class="value" id="curWorkdir" style="font-size:11px">—</span></div>
-              <div class="key-input-row">
-                <input type="text" class="key-input" id="workdirInput" placeholder="例如: C:\\Users\\24569\\project" />
-                <button class="btn btn-primary" onclick="setWorkdir()">切换</button>
+              <div class="stat-row"><span class="label">当前目录</span></div>
+              <div id="workdirDisplay" style="font-family:var(--font-mono);font-size:12px;color:var(--accent);cursor:pointer;padding:6px 0;" onclick="editWorkdir()" title="点击编辑">—</div>
+              <div id="workdirEdit" style="display:none">
+                <div class="key-input-row">
+                  <input type="text" class="key-input" id="workdirInput" placeholder="输入目录路径" />
+                  <button class="btn btn-primary" onclick="saveWorkdir()">保存</button>
+                  <button class="btn btn-ghost" onclick="cancelWorkdirEdit()">取消</button>
+                </div>
               </div>
+              <button class="btn btn-ghost" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="document.getElementById('folderPicker').click()">📁 选择目录</button>
+              <input type="file" id="folderPicker" webkitdirectory style="display:none" onchange="pickFolder(this)" />
+              <div id="dirBrowser" style="display:none;margin-top:8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;background:var(--bg-input);padding:4px"></div>
             </div>
           </div>
 
