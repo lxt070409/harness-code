@@ -122,6 +122,13 @@ async def chat(req: ChatRequest):
         # Switch to configured workdir before running
         old_cwd = os.getcwd()
         os.chdir(_workdir)
+        # Copy uploaded files to workdir so the agent can find them
+        import shutil
+        for f in UPLOAD_DIR.iterdir():
+            if f.is_file():
+                dest = Path(_workdir) / f.name
+                if not dest.exists():
+                    shutil.copy2(str(f), str(dest))
         result = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(_executor, agent.run, req.message),
             timeout=120,
