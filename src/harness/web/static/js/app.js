@@ -138,36 +138,56 @@ async function sendMessage() {
   input.style.height = 'auto';
   messageCount++;
 
-  // Typing indicator
-  const typingId = 'typing-' + messageCount;
-  const typing = document.createElement('div');
-  typing.className = 'typing-indicator';
-  typing.id = typingId;
-  typing.innerHTML = `
-    <div class="msg-avatar" style="background:var(--accent);color:white;">H</div>
-    <div class="typing-dots"><span></span><span></span><span></span></div>`;
-  container.appendChild(typing);
-  container.scrollTop = container.scrollHeight;
+  // Progress area — shows live agent activity
+  const progressDiv = document.createElement('div');
+  progressDiv.id = 'progressArea';
+  progressDiv.style.cssText = 'padding:4px 24px 0;font-size:13px;color:var(--text-muted);font-family:var(--font-mono)';
+  container.appendChild(progressDiv);
 
-  try {
-    const res = await fetch('/api/chat', {
+  // SSE connection via fetch (EventSource only supports GET)
+  const replyText = await new Promise((resolve) => {
+    let result = '';
+    fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text }),
+    }).then(async (res) => {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'thinking' || data.type === 'tool') {
+                progressDiv.textContent = data.data;
+              } else if (data.type === 'tool_result' || data.type === 'info') {
+                progressDiv.textContent = data.data;
+              } else if (data.type === 'result') {
+                result = data.data;
+                progressDiv.remove();
+                addMessage(container, 'assistant', 'H', formatReply(data.data), time);
+                saveMessage('assistant', data.data);
+              } else if (data.type === 'error') {
+                progressDiv.textContent = '❌ ' + data.data;
+              }
+              container.scrollTop = container.scrollHeight;
+            } catch (e) {}
+          }
+        }
+      }
+      resolve(result);
+    }).catch(() => {
+      if (!result) progressDiv.textContent = '❌ 连接断开';
+      resolve(result);
     });
-    document.getElementById(typingId)?.remove();
-
-    const data = await res.json();
-    const reply = data.reply || '(无回复)';
-    addMessage(container, 'assistant', 'H', formatReply(reply), time);
-    saveMessage('assistant', reply);
-    updateStatusBar(data);
-  } catch (err) {
-    document.getElementById(typingId)?.remove();
-    addMessage(container, 'assistant', 'H', '❌ 网络错误: ' + err.message, time);
-  }
-
-  container.scrollTop = container.scrollHeight;
+  });
 }
 
 // ─── File Upload ───

@@ -7,9 +7,9 @@ from datetime import datetime
 import asyncio
 import concurrent.futures
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from pathlib import Path
 
@@ -148,6 +148,36 @@ async def chat(req: ChatRequest):
             reply=f"❌ 执行出错: {str(e)[:200]}",
             timestamp=datetime.now().isoformat(),
         )
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(req: ChatRequest, request: Request):
+    """SSE streaming chat — real-time progress events."""
+    if not ENV_FILE.exists():
+        return ChatResponse(reply="❌ 未配置 API Key。", timestamp=datetime.now().isoformat())
+
+    async def event_stream():
+        agent = get_agent()
+        old_cwd = os.getcwd()
+        os.chdir(_workdir)
+        import shutil
+        for f in UPLOAD_DIR.iterdir():
+            if f.is_file():
+                dest = Path(_workdir) / f.name
+                if not dest.exists():
+                    shutil.copy2(str(f), str(dest))
+
+        loop = asyncio.get_event_loop()
+        events = await loop.run_in_executor(_executor, lambda: list(agent.run_stream(req.message)))
+
+        for event in events:
+            if await request.is_disconnected():
+                break
+            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+        os.chdir(old_cwd)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get("/api/guardrail-log")
